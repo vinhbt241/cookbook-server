@@ -1,0 +1,27 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  max_connections: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+development:
+  <<: *default
+  database: cookbook_development
+
+production:
+  primary: &primary_production
+    <<: *default
+    database: cookbook_production
+    username: cookbook
+    password: <%= ENV["COOKBOOK_DATABASE_PASSWORD"] %>
+  cache:
+    <<: *primary_production
+    database: cookbook_production_cache
+    migrations_paths: db/cache_migrate
+  queue:
+    <<: *primary_production
+    database: cookbook_production_queue
+    migrations_paths: db/queue_migrate
+  cable:
+    <<: *primary_production
+    database: cookbook_production_cable
+    migrations_paths: db/cable_migrate
