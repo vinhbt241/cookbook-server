@@ -7,6 +7,10 @@ development:
   <<: *default
   database: cookbook_development
 
+test:
+  <<: *default
+  database: cookbook_test
+
 production:
   primary: &primary_production
     <<: *default

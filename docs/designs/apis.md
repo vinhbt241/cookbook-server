@@ -31,6 +31,19 @@ Response:
 - User information
 - Account status
 
+### GET /auth/confirm/:token
+
+Confirm an email address using the token sent in the registration email.
+
+Request:
+- Confirmation token (in the path, from the email link)
+
+Behavior:
+- Marks the account confirmed
+
+Response:
+- User information (with confirmed status)
+
 ### POST /auth/login
 
 Authenticate an existing email/password account.

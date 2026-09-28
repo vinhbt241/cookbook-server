@@ -11,4 +11,9 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   # root "posts#index"
+
+  post "auth/register", to: "auth#register"
+  post "auth/login", to: "auth#login"
+  get "auth/me", to: "auth#me"
+  get "auth/confirm/:token", to: "auth#confirm", as: :auth_confirm
 end
