@@ -9,7 +9,7 @@ module GoogleIdTokenVerifier
   module_function
 
   def verify(id_token)
-    audience = ENV["GOOGLE_CLIENT_ID"].presence
+    audience = Rails.application.credentials.google_client_id.presence
     raise InvalidToken, "Google sign-in is not configured" unless audience
 
     Google::Auth::IDTokens.verify_oidc(id_token, aud: audience)
