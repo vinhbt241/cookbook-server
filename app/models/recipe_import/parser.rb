@@ -18,13 +18,13 @@ module RecipeImport
 
     module_function
 
-    def parse(source_identifier:, source_type:, source:)
+    def parse(source:)
       ParseResult.new(
         name: "Stub Recipe",
         description: nil,
         preparation_time: nil,
-        cooking_time: 20,
-        servings: 4,
+        cooking_time: nil,
+        servings: nil,
         calories: nil,
         nutritional_information: nil,
         ingredients: [

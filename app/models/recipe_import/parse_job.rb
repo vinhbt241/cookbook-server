@@ -6,11 +6,8 @@ module RecipeImport
 
     def perform(record_id)
       record = Record.find(record_id)
-      parse_result = Parser.parse(
-        source_identifier: record.source_identifier,
-        source_type: record.source_type,
-        source: record.source
-      )
+      source = Source.new(type: record.source_type, value: record.source)
+      parse_result = Parser.parse(source: source)
 
       original_recipe = persist_original_recipe(record, parse_result)
       record.update!(status: :done, original_recipe: original_recipe)

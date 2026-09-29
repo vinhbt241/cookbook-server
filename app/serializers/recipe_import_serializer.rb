@@ -1,4 +1,18 @@
 class RecipeImportSerializer
+  def self.submission(submission)
+    if submission.cached?
+      original_recipe = OriginalRecipeSerializer.new(submission.original_recipe)
+
+      {
+        status: "cached",
+        original_recipe: original_recipe.as_json,
+        field_status: original_recipe.field_status
+      }
+    else
+      { import_id: submission.import_id, status: "processing" }
+    end
+  end
+
   def initialize(record)
     @record = record
   end
