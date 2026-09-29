@@ -152,6 +152,16 @@ RSpec.describe "Auth", type: :request do
       expect(response).to have_http_status(:unauthorized)
       expect(JSON.parse(response.body)["error"]).to match(/invalid Google ID token/i)
     end
+
+    it "returns 500 when Google sign-in is not configured" do
+      allow(GoogleIdTokenVerifier).to receive(:verify).with("google-id-token")
+        .and_raise(GoogleIdTokenVerifier::ConfigurationError, "Google sign-in is not configured")
+
+      post "/auth/google", params: { credential: "google-id-token" }, as: :json
+
+      expect(response).to have_http_status(:internal_server_error)
+      expect(JSON.parse(response.body)["error"]).to match(/not configured/i)
+    end
   end
 
   describe "GET /auth/me" do

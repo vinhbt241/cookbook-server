@@ -15,6 +15,9 @@ module Auth
   # Raised when a Google ID token is invalid or expired.
   class InvalidGoogleToken < Error; end
 
+  # Raised when a required auth provider is not configured.
+  class ConfigurationError < Error; end
+
   # Raised when a confirmation token is invalid or expired.
   class InvalidToken < Error; end
 
@@ -98,6 +101,8 @@ module Auth
     user
   rescue GoogleIdTokenVerifier::InvalidToken => e
     raise InvalidGoogleToken, e.message
+  rescue GoogleIdTokenVerifier::ConfigurationError => e
+    raise ConfigurationError, e.message
   end
 
   # Issues a bearer session token for the given user.
