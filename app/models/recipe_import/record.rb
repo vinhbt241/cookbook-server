@@ -6,6 +6,6 @@ module RecipeImport
 
     belongs_to :original_recipe, class_name: "OriginalRecipe", optional: true
 
-    enum :status, { processing: "processing", done: "done", cached: "cached", failed: "failed" }
+    enum :status, { processing: 0, done: 1, cached: 2, failed: 3 }
   end
 end

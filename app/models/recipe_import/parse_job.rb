@@ -13,11 +13,11 @@ module RecipeImport
       )
 
       original_recipe = persist_original_recipe(record, parse_result)
-      record.update!(status: "done", original_recipe: original_recipe)
+      record.update!(status: :done, original_recipe: original_recipe)
     rescue => e
       raise unless record
 
-      record.update!(status: "failed", error: e.message)
+      record.update!(status: :failed, error: e.message)
     end
 
     private

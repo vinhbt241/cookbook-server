@@ -23,7 +23,7 @@ class CreateRecipeImportTables < ActiveRecord::Migration[8.1]
       t.string :source_identifier, null: false
       t.string :source_type, null: false
       t.text :source, null: false
-      t.string :status, null: false, default: "processing"
+      t.integer :status, null: false, default: 0
       t.text :error
 
       t.timestamps

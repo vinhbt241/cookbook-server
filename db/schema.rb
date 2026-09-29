@@ -60,7 +60,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_29_000000) do
     t.string "source_identifier", null: false
     t.string "source_type", null: false
     t.text "source", null: false
-    t.string "status", default: "processing", null: false
+    t.integer "status", default: 0, null: false
     t.text "error"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
