@@ -17,4 +17,7 @@ Rails.application.routes.draw do
   post "auth/login", to: "auth#login"
   get "auth/me", to: "auth#me"
   get "auth/confirm/:token", to: "auth#confirm", as: :auth_confirm
+
+  post "recipe-imports", to: "recipe_imports#create"
+  get "recipe-imports/:id", to: "recipe_imports#show", as: :recipe_import
 end
