@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_29_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_29_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -52,6 +52,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_29_000000) do
     t.datetime "last_checked_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.jsonb "field_status", default: {}, null: false
     t.index ["source_identifier"], name: "index_original_recipes_on_source_identifier", unique: true
   end
 
@@ -64,6 +65,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_29_000000) do
     t.text "error"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "error_code"
+    t.integer "retry_count", default: 0, null: false
     t.index ["original_recipe_id"], name: "index_recipe_imports_on_original_recipe_id"
     t.index ["source_identifier"], name: "index_recipe_imports_on_source_identifier"
   end

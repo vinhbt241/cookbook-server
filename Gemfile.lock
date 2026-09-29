@@ -452,11 +452,13 @@ DEPENDENCIES
   capybara
   debug
   factory_bot_rails
+  faraday (~> 2.14)
   googleauth (~> 1.17)
   image_processing (~> 1.2)
   importmap-rails
   jbuilder
   kamal
+  nokogiri (~> 1.19)
   pg (~> 1.1)
   propshaft
   puma (>= 5.0)

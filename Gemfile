@@ -25,6 +25,12 @@ gem "bcrypt", "~> 3.1.7"
 # Verify Google ID tokens for Google sign-in
 gem "googleauth", "~> 1.17"
 
+# HTTP transport for web-page fetching and AI provider adapters
+gem "faraday", "~> 2.14"
+
+# Parse web-page HTML for deterministic recipe extraction
+gem "nokogiri", "~> 1.19"
+
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 

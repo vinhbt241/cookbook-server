@@ -20,4 +20,5 @@ Rails.application.routes.draw do
 
   post "recipe-imports", to: "recipe_imports#create"
   get "recipe-imports/:id", to: "recipe_imports#show", as: :recipe_import
+  post "recipe-imports/:id/retry", to: "recipe_imports#retry", as: :retry_recipe_import
 end
