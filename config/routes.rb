@@ -13,6 +13,7 @@ Rails.application.routes.draw do
   # root "posts#index"
 
   post "auth/register", to: "auth#register"
+  post "auth/google", to: "auth#google"
   post "auth/login", to: "auth#login"
   get "auth/me", to: "auth#me"
   get "auth/confirm/:token", to: "auth#confirm", as: :auth_confirm

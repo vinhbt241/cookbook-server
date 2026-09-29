@@ -26,6 +26,15 @@ class AuthController < ApplicationController
     render json: { error: e.message }, status: :unauthorized
   end
 
+  def google
+    user = Auth.google(credential: params[:credential])
+    render json: { token: Auth.issue_session_token(user), user: user_payload(user) }, status: :ok
+  rescue Auth::InvalidGoogleToken => e
+    render json: { error: e.message }, status: :unauthorized
+  rescue Auth::ConfigurationError => e
+    render json: { error: e.message }, status: :internal_server_error
+  end
+
   def me
     render json: { user: user_payload(current_user) }, status: :ok
   end

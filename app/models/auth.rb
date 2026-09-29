@@ -12,6 +12,12 @@ module Auth
   # Raised when logging in with an unknown email or wrong password.
   class InvalidCredentials < Error; end
 
+  # Raised when a Google ID token is invalid or expired.
+  class InvalidGoogleToken < Error; end
+
+  # Raised when a required auth provider is not configured.
+  class ConfigurationError < Error; end
+
   # Raised when a confirmation token is invalid or expired.
   class InvalidToken < Error; end
 
@@ -65,6 +71,38 @@ module Auth
     raise InvalidCredentials, "invalid email or password" unless user&.authenticate(password)
 
     issue_session_token(user)
+  end
+
+  # Signs in with a Google ID token.
+  #
+  # Verifies the token, creates a confirmed account on first sign-in, and
+  # reuses it on later sign-ins. Returns the confirmed User. Raises
+  # InvalidGoogleToken when the token cannot be verified.
+  def google(credential:)
+    payload = GoogleIdTokenVerifier.verify(credential)
+    email = payload["email"].to_s.strip.downcase
+    unless payload["email_verified"] && email.present?
+      raise InvalidGoogleToken, "invalid Google ID token"
+    end
+
+    user = User.find_by(email: email)
+    if user
+      user.confirm! unless user.confirmed?
+    else
+      user = User.new(
+        email: email,
+        name: payload["name"].presence || email,
+        confirmed_at: Time.current
+      )
+      user.skip_password_validation = true
+      user.save!
+    end
+
+    user
+  rescue GoogleIdTokenVerifier::InvalidToken => e
+    raise InvalidGoogleToken, e.message
+  rescue GoogleIdTokenVerifier::ConfigurationError => e
+    raise ConfigurationError, e.message
   end
 
   # Issues a bearer session token for the given user.
