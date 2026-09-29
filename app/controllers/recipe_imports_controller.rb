@@ -21,6 +21,20 @@ class RecipeImportsController < ApplicationController
     render json: RecipeImportSerializer.new(record).as_json, status: :ok
   end
 
+  def retry
+    record = RecipeImport.find(params[:id])
+    return render json: { error: "import not found" }, status: :not_found unless record
+    return render json: { error: "import is not failed" }, status: :conflict unless record.failed?
+
+    if record.retry_count >= RecipeImport::Record::MAX_RETRY_ATTEMPTS
+      return render json: { error: "retry limit reached" }, status: :conflict
+    end
+
+    submission = RecipeImport.retry(record)
+    render json: RecipeImportSerializer.submission(submission),
+      status: submission.cached? ? :ok : :accepted
+  end
+
   private
 
   def authenticate_confirmed!

@@ -10,11 +10,15 @@ module RecipeImport
       parse_result = Parser.parse(source: source)
 
       original_recipe = persist_original_recipe(record, parse_result)
-      record.update!(status: :done, original_recipe: original_recipe)
+      record.update!(status: :done, original_recipe: original_recipe, error: nil, error_code: nil)
+    rescue RecipeImport::PipelineError => e
+      raise unless record
+
+      record.update!(status: :failed, error: e.message, error_code: e.error_code)
     rescue => e
       raise unless record
 
-      record.update!(status: :failed, error: e.message)
+      record.update!(status: :failed, error: e.message, error_code: "internal_error")
     end
 
     private
@@ -32,6 +36,7 @@ module RecipeImport
             servings: parse_result.servings,
             calories: parse_result.calories,
             nutritional_information: parse_result.nutritional_information,
+            field_status: parse_result.field_status,
             original_source: record.source,
             source_identifier: record.source_identifier,
             parsed_at: Time.current,

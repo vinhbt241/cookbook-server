@@ -30,7 +30,14 @@ class RecipeImportSerializer
         field_status: original_recipe.field_status
       }
     when "failed"
-      { status: "failed", error: record.error }
+      {
+        status: "failed",
+        error: record.error,
+        error_code: record.error_code,
+        retryable: record.retryable?,
+        retry_count: record.retry_count,
+        retries_remaining: record.retries_remaining
+      }
     end
   end
 

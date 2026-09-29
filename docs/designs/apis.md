@@ -91,7 +91,17 @@ Poll a parse job. Requires a verified account.
 Response:
 - `{ "status": "processing" }` — poll again
 - `{ "status": "done" | "cached", "original_recipe": {...}, "field_status": {...} }`
-- `{ "status": "failed", "error": {...} }` — rare; partial results are preserved where possible (req #9)
+- `{ "status": "failed", "error": "...", "error_code": "...", "retryable": true|false, "retry_count": 1, "retries_remaining": 2 }` — rare; partial results are preserved where possible (req #9)
+
+### POST /recipe-imports/:id/retry
+
+Re-run a failed import in place. Requires a verified account.
+
+Response:
+- `202 { "import_id": "...", "status": "processing" }`
+- Or, on a cache hit, the parsed recipe inline with `status: "cached"` (no retry is consumed)
+- `404` unknown import
+- `409 { "error": "import is not failed" | "retry limit reached" }`
 
 `original_recipe` fields:
 - `name`, `description`, `ingredients` (free text), `instructions` (ordered), `preparation_time`, `cooking_time`, `servings`, `calories`, `nutritional_information` (source-provided only), `original_source`, `source_identifier`, `categories` (empty in MVP)

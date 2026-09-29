@@ -21,17 +21,7 @@ class OriginalRecipeSerializer
   end
 
   def field_status
-    {
-      name: found?(original_recipe.name),
-      description: found?(original_recipe.description),
-      ingredients: found?(original_recipe.original_recipe_ingredients.any?),
-      instructions: found?(original_recipe.original_cooking_instructions.any?),
-      preparation_time: found?(original_recipe.preparation_time),
-      cooking_time: found?(original_recipe.cooking_time),
-      servings: found?(original_recipe.servings),
-      calories: found?(original_recipe.calories),
-      nutritional_information: found?(original_recipe.nutritional_information)
-    }
+    original_recipe.field_status.presence || {}
   end
 
   private
@@ -58,9 +48,5 @@ class OriginalRecipeSerializer
         content: instruction.content
       }
     end
-  end
-
-  def found?(value)
-    value.present? ? "found" : "not_found"
   end
 end
