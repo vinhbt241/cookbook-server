@@ -26,7 +26,7 @@ Relationships: none in MVP. The server's `OriginalRecipe` cache is globally shar
 - notes: text
 - original_source: string
 - source_identifier: string (web page → URL, YouTube → video ID, PDF/image → content hash)
-- extracted_at: datetime
+- parsed_at: datetime
 - last_checked_at: datetime
 
 Relationships:
