@@ -68,13 +68,9 @@ module RecipeImport
     private_class_method :find_recipe
 
     def recipe_type?(type)
-      case type
-      when String
-        type == "Recipe" || type.end_with?("/Recipe")
-      when Array
-        type.any? { |entry| recipe_type?(entry) }
-      else
-        false
+      Array(type).any? do |entry|
+        entry.to_s.split("#", 2).first.end_with?("/Recipe") ||
+          entry.to_s == "Recipe"
       end
     end
     private_class_method :recipe_type?
@@ -194,8 +190,12 @@ module RecipeImport
 
     def string_array(value)
       Array(value).filter_map do |item|
-        item = item["name"] if item.is_a?(Hash) && item["name"].present?
-        item.to_s.strip.presence
+        case item
+        when String
+          item.strip.presence
+        when Hash
+          item["name"].to_s.strip.presence
+        end
       end
     end
     private_class_method :string_array
