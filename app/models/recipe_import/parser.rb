@@ -60,7 +60,7 @@ module RecipeImport
 
     def evaluate_presence(page, extraction)
       state = [ page.text, extraction.markup_dump ].compact_blank.join("\n\nSchema.org markup:\n")
-      questions = FIELD_NAMES.index_with { { type: "noul" } }
+      questions = FIELD_NAMES.index_with { |field_name| { type: "noul", instructions: "does the state contain cooking recipe's #{field_name}?" } }
       scores = TypeSafeClient.evaluate(state: state, questions: questions)
 
       FIELD_NAMES.index_with do |field|
