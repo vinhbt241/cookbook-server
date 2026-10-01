@@ -37,6 +37,21 @@ class DeepSeekClient
     - nutritional_information: object
   PROMPT
 
+  VISION_SYSTEM_PROMPT = <<~PROMPT.freeze
+    You extract recipe data from a photo of a recipe.
+    Return a JSON object with only these keys. Use null or omit a key when the
+    value is absent. Never invent values.
+    - name: string
+    - description: string
+    - ingredients: array of strings
+    - instructions: array of strings, in cooking order
+    - preparation_time: integer minutes
+    - cooking_time: integer minutes
+    - servings: integer
+    - calories: integer
+    - nutritional_information: object
+  PROMPT
+
   class Error < StandardError; end
   class ApiError < Error; end
   class TimeoutError < Error; end
@@ -46,17 +61,44 @@ class DeepSeekClient
     new.structure(text)
   end
 
+  def self.structure_image(data_uri)
+    new.structure_image(data_uri)
+  end
+
   def structure(text)
-    response = connection.post(CHAT_PATH) do |request|
+    parse_structure_response do
+      post_structure_request([
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: text.to_s }
+      ])
+    end
+  end
+
+  def structure_image(data_uri)
+    parse_structure_response do
+      post_structure_request([
+        { role: "system", content: VISION_SYSTEM_PROMPT },
+        { role: "user", content: [
+          { type: "image_url", image_url: { url: data_uri } }
+        ] }
+      ])
+    end
+  end
+
+  private
+
+  def post_structure_request(messages)
+    connection.post(CHAT_PATH) do |request|
       request.body = {
         model: MODEL,
         response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: text.to_s }
-        ]
+        messages: messages
       }.to_json
     end
+  end
+
+  def parse_structure_response
+    response = yield
 
     raise ApiError, "DeepSeek API error: HTTP #{response.status}" unless response.success?
 
@@ -71,8 +113,6 @@ class DeepSeekClient
   rescue JSON::ParserError => e
     raise InvalidResponse, "DeepSeek returned malformed JSON: #{e.message}"
   end
-
-  private
 
   def connection
     @connection ||= Faraday.new(url: BASE_URL) do |conn|
