@@ -24,23 +24,14 @@ module RecipeImport
     module_function
 
     def parse(source:)
-      page = WebPageFetcher.fetch(source.value)
-      extraction = build_extraction(page)
-      field_status = evaluate_presence(page, extraction)
-      gated_fields = apply_gates(extraction.fields, field_status)
-
-      ParseResult.new(
-        name: gated_fields["name"],
-        description: gated_fields["description"],
-        preparation_time: gated_fields["preparation_time"],
-        cooking_time: gated_fields["cooking_time"],
-        servings: gated_fields["servings"],
-        calories: gated_fields["calories"],
-        nutritional_information: gated_fields["nutritional_information"],
-        ingredients: normalize_ingredients(gated_fields["ingredients"]),
-        instructions: normalize_instructions(gated_fields["instructions"]),
-        field_status: field_status
-      )
+      case source.type
+      when "web_page"
+        parse_web_page(source)
+      when "image"
+        parse_image(source)
+      else
+        raise PipelineError.new(error_code: "unsupported_source_type", message: "unsupported source_type")
+      end
     rescue WebPageFetcher::Error => e
       raise map_fetch_error(e)
     rescue DeepSeekClient::Error => e
@@ -48,6 +39,65 @@ module RecipeImport
     rescue TypeSafeClient::Error => e
       raise PipelineError.new(error_code: "jev_error", message: e.message)
     end
+
+    def parse_web_page(source)
+      page = WebPageFetcher.fetch(source.value)
+      extraction = build_extraction(page)
+      field_status = evaluate_presence(page, extraction)
+      gated_fields = apply_gates(extraction.fields, field_status)
+
+      build_result(gated_fields, field_status)
+    end
+    private_class_method :parse_web_page
+
+    def parse_image(source)
+      extraction = build_image_extraction(source.value)
+      field_status = evaluate_image_presence(extraction)
+      gated_fields = apply_gates(extraction.fields, field_status)
+
+      build_result(gated_fields, field_status)
+    end
+    private_class_method :parse_image
+
+    def build_image_extraction(data_uri)
+      fields = Extraction.empty_fields.merge(DeepSeekClient.structure_image(data_uri))
+      Extraction.new(markup_present: false, fields: fields, markup_dump: "")
+    end
+    private_class_method :build_image_extraction
+
+    def evaluate_image_presence(extraction)
+      state = extraction.fields.each_with_object([]) do |(field, value), lines|
+        next if value.blank?
+
+        lines << "#{field}: #{value.inspect}"
+      end.join("\n")
+      state = "No recipe fields were extracted from the image." if state.blank?
+
+      questions = FIELD_NAMES.index_with { |field_name| { type: "noul", instructions: "does the state contain cooking recipe's #{field_name}?" } }
+      scores = TypeSafeClient.evaluate(state: state, questions: questions)
+
+      FIELD_NAMES.index_with do |field|
+        score = scores[field]
+        score.to_f >= JEV_PRESENCE_THRESHOLD ? "found" : "not_found"
+      end
+    end
+    private_class_method :evaluate_image_presence
+
+    def build_result(fields, field_status)
+      ParseResult.new(
+        name: fields["name"],
+        description: fields["description"],
+        preparation_time: fields["preparation_time"],
+        cooking_time: fields["cooking_time"],
+        servings: fields["servings"],
+        calories: fields["calories"],
+        nutritional_information: fields["nutritional_information"],
+        ingredients: normalize_ingredients(fields["ingredients"]),
+        instructions: normalize_instructions(fields["instructions"]),
+        field_status: field_status
+      )
+    end
+    private_class_method :build_result
 
     def build_extraction(page)
       deterministic = DeterministicExtractor.extract(page.html)

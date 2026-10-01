@@ -37,7 +37,7 @@ module RecipeImport
             calories: parse_result.calories,
             nutritional_information: parse_result.nutritional_information,
             field_status: parse_result.field_status,
-            original_source: record.source,
+            original_source: record.source_type == "image" ? record.source_identifier : record.source,
             source_identifier: record.source_identifier,
             parsed_at: Time.current,
             last_checked_at: Time.current

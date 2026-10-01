@@ -1,4 +1,5 @@
 require "rails_helper"
+require "digest"
 
 RSpec.describe "RecipeImports", type: :request do
   include ActiveJob::TestHelper
@@ -26,6 +27,17 @@ RSpec.describe "RecipeImports", type: :request do
 
   def auth_headers(user)
     { "Authorization" => "Bearer #{Auth.issue_session_token(user)}" }
+  end
+
+  def upload_recipe_image
+    Rack::Test::UploadedFile.new(
+      Rails.root.join("spec/fixtures/files/recipe_photo.png"),
+      "image/png"
+    )
+  end
+
+  def recipe_image_content_hash
+    Digest::SHA256.hexdigest(File.binread(Rails.root.join("spec/fixtures/files/recipe_photo.png")))
   end
 
   before do
@@ -71,6 +83,104 @@ RSpec.describe "RecipeImports", type: :request do
 
       expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["error"]).to match(/valid web page URL/i)
+    end
+  end
+
+  describe "POST /recipe-imports with an image upload" do
+    it "returns 202 with an import_id and processing status for an image upload" do
+      user = create(:user, confirmed_at: Time.current)
+
+      post "/recipe-imports", params: { resource_type: "image", resource: upload_recipe_image },
+        headers: auth_headers(user)
+
+      expect(response).to have_http_status(:accepted)
+      body = JSON.parse(response.body)
+      expect(body["import_id"]).to be_present
+      expect(body["status"]).to eq("processing")
+    end
+
+    it "structures the image through DeepSeek vision and blanks fields Jev judges not_found" do
+      user = create(:user, confirmed_at: Time.current)
+      allow(DeepSeekClient).to receive(:structure_image).and_return(
+        "name" => "Photo Pancakes",
+        "ingredients" => [ "1 cup flour", "1 cup milk", "2 eggs" ],
+        "instructions" => [ "Mix everything.", "Cook until golden." ],
+        "preparation_time" => 5,
+        "cooking_time" => 15,
+        "servings" => 2
+      )
+      allow(TypeSafeClient).to receive(:evaluate).and_return(
+        all_found_scores.merge("calories" => 0.1, "nutritional_information" => 0.1)
+      )
+
+      post "/recipe-imports", params: { resource_type: "image", resource: upload_recipe_image },
+        headers: auth_headers(user)
+      import_id = JSON.parse(response.body)["import_id"]
+
+      perform_enqueued_jobs
+
+      expect(DeepSeekClient).to have_received(:structure_image).once
+
+      get "/recipe-imports/#{import_id}", headers: auth_headers(user)
+      body = JSON.parse(response.body)
+      expect(body["status"]).to eq("done")
+
+      original_recipe = body["original_recipe"]
+      expect(original_recipe["name"]).to eq("Photo Pancakes")
+      expect(original_recipe["ingredients"].map { |ingredient| ingredient["name"] })
+        .to eq([ "1 cup flour", "1 cup milk", "2 eggs" ])
+      expect(original_recipe["instructions"].map { |instruction| instruction["content"] })
+        .to eq([ "Mix everything.", "Cook until golden." ])
+      expect(original_recipe["preparation_time"]).to eq(5)
+      expect(original_recipe["cooking_time"]).to eq(15)
+      expect(original_recipe["servings"]).to eq(2)
+      expect(original_recipe["calories"]).to be_nil
+      expect(body["field_status"]).to include(
+        "name" => "found",
+        "calories" => "not_found",
+        "nutritional_information" => "not_found"
+      )
+    end
+
+    it "uses the image content hash as source_identifier and re-imports the same file from cache" do
+      user = create(:user, confirmed_at: Time.current)
+      allow(DeepSeekClient).to receive(:structure_image).and_return("name" => "Photo Pancakes")
+
+      post "/recipe-imports", params: { resource_type: "image", resource: upload_recipe_image },
+        headers: auth_headers(user)
+      expect(response).to have_http_status(:accepted)
+
+      perform_enqueued_jobs
+
+      original_recipe = OriginalRecipe.last
+      expect(original_recipe.source_identifier).to eq(recipe_image_content_hash)
+      expect(original_recipe.original_source).to eq(recipe_image_content_hash)
+      expect(DeepSeekClient).to have_received(:structure_image).once
+
+      post "/recipe-imports", params: { resource_type: "image", resource: upload_recipe_image },
+        headers: auth_headers(user)
+
+      expect(response).to have_http_status(:ok)
+      body = JSON.parse(response.body)
+      expect(body["status"]).to eq("cached")
+      expect(body["original_recipe"]["source_identifier"]).to eq(recipe_image_content_hash)
+
+      expect(OriginalRecipe.count).to eq(1)
+      expect(DeepSeekClient).to have_received(:structure_image).once
+    end
+
+    it "rejects an image upload that is not an image" do
+      user = create(:user, confirmed_at: Time.current)
+      upload = Rack::Test::UploadedFile.new(
+        Rails.root.join("spec/fixtures/recipes/no_markup_text.html"),
+        "text/html"
+      )
+
+      post "/recipe-imports", params: { resource_type: "image", resource: upload },
+        headers: auth_headers(user)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)["error"]).to match(/image file/i)
     end
   end
 
