@@ -79,6 +79,7 @@ class DeepSeekClient
       post_structure_request([
         { role: "system", content: VISION_SYSTEM_PROMPT },
         { role: "user", content: [
+          { type: "text", text: "Extract the recipe from this image." },
           { type: "image_url", image_url: { url: data_uri } }
         ] }
       ])

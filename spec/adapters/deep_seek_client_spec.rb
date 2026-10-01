@@ -60,6 +60,7 @@ RSpec.describe DeepSeekClient do
 
     body = JSON.parse(captured_body)
     expect(body.dig("messages", 1, "content")).to eq([
+      { "type" => "text", "text" => "Extract the recipe from this image." },
       { "type" => "image_url", "image_url" => { "url" => "data:image/png;base64,cGhvdG8=" } }
     ])
   end
