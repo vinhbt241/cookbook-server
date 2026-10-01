@@ -24,6 +24,10 @@ _Avoid_: parse, extract
 The server's act of converting a `Source` into an `OriginalRecipe`.
 _Avoid_: extract, analyze, scrape
 
+**Gate**:
+The step in Parse where Jev judges which recipe fields are present in the Source; a field judged absent is blanked before the OriginalRecipe is built.
+_Avoid_: filter, validate, check
+
 **Review**:
 The step where a user inspects and corrects a parsed recipe before saving it.
 _Avoid_: preview, confirm

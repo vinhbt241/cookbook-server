@@ -19,8 +19,6 @@ module RecipeImport
       :field_status
     )
 
-    JEV_PRESENCE_THRESHOLD = 0.5
-
     module_function
 
     def parse(source:)
@@ -43,19 +41,18 @@ module RecipeImport
     def parse_web_page(source)
       page = WebPageFetcher.fetch(source.value)
       extraction = build_extraction(page)
-      field_status = evaluate_presence(page, extraction)
-      gated_fields = apply_gates(extraction.fields, field_status)
+      state = [ page.text, extraction.markup_dump ].compact_blank.join("\n\nSchema.org markup:\n")
+      result = Gate.apply(fields: extraction.fields, state: state)
 
-      build_result(gated_fields, field_status)
+      build_result(result.gated_fields, result.field_status)
     end
     private_class_method :parse_web_page
 
     def parse_image(source)
       extraction = build_image_extraction(source.value)
-      field_status = evaluate_image_presence(extraction)
-      gated_fields = apply_gates(extraction.fields, field_status)
+      result = Gate.apply(fields: extraction.fields, state: image_state(extraction.fields))
 
-      build_result(gated_fields, field_status)
+      build_result(result.gated_fields, result.field_status)
     end
     private_class_method :parse_image
 
@@ -65,23 +62,17 @@ module RecipeImport
     end
     private_class_method :build_image_extraction
 
-    def evaluate_image_presence(extraction)
-      state = extraction.fields.each_with_object([]) do |(field, value), lines|
+    def image_state(fields)
+      state = fields.each_with_object([]) do |(field, value), lines|
         next if value.blank?
 
         lines << "#{field}: #{value.inspect}"
       end.join("\n")
       state = "No recipe fields were extracted from the image." if state.blank?
 
-      questions = FIELD_NAMES.index_with { |field_name| { type: "noul", instructions: "does the state contain cooking recipe's #{field_name}?" } }
-      scores = TypeSafeClient.evaluate(state: state, questions: questions)
-
-      FIELD_NAMES.index_with do |field|
-        score = scores[field]
-        score.to_f >= JEV_PRESENCE_THRESHOLD ? "found" : "not_found"
-      end
+      state
     end
-    private_class_method :evaluate_image_presence
+    private_class_method :image_state
 
     def build_result(fields, field_status)
       ParseResult.new(
@@ -107,30 +98,6 @@ module RecipeImport
       Extraction.new(markup_present: false, fields: fields, markup_dump: "")
     end
     private_class_method :build_extraction
-
-    def evaluate_presence(page, extraction)
-      state = [ page.text, extraction.markup_dump ].compact_blank.join("\n\nSchema.org markup:\n")
-      questions = FIELD_NAMES.index_with { |field_name| { type: "noul", instructions: "does the state contain cooking recipe's #{field_name}?" } }
-      scores = TypeSafeClient.evaluate(state: state, questions: questions)
-
-      FIELD_NAMES.index_with do |field|
-        score = scores[field]
-        score.to_f >= JEV_PRESENCE_THRESHOLD ? "found" : "not_found"
-      end
-    end
-    private_class_method :evaluate_presence
-
-    def apply_gates(fields, field_status)
-      fields.each_with_object({}) do |(field, value), gated|
-        gated[field] = field_status[field] == "not_found" ? blank_for(field) : value
-      end
-    end
-    private_class_method :apply_gates
-
-    def blank_for(field)
-      field.in?(%w[ingredients instructions]) ? [] : nil
-    end
-    private_class_method :blank_for
 
     def normalize_ingredients(values)
       Array(values).filter_map do |value|
