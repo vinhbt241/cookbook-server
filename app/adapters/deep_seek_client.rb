@@ -2,6 +2,8 @@
 #
 # This is the adapter seam for the DeepSeek fallback. The parse pipeline talks
 # to this class and never reaches Faraday or the DeepSeek API directly.
+require "base64"
+
 class DeepSeekClient
   BASE_URL = "https://api.deepseek.com"
   CHAT_PATH = "/chat/completions"
@@ -56,13 +58,14 @@ class DeepSeekClient
   class ApiError < Error; end
   class TimeoutError < Error; end
   class InvalidResponse < Error; end
+  class ImageDownloadError < Error; end
 
   def self.structure(text)
     new.structure(text)
   end
 
-  def self.structure_image(data_uri)
-    new.structure_image(data_uri)
+  def self.structure_image(image)
+    new.structure_image(image)
   end
 
   def structure(text)
@@ -74,7 +77,9 @@ class DeepSeekClient
     end
   end
 
-  def structure_image(data_uri)
+  def structure_image(image)
+    data_uri = image_data_uri(image)
+
     parse_structure_response do
       post_structure_request([
         { role: "system", content: VISION_SYSTEM_PROMPT },
@@ -113,6 +118,39 @@ class DeepSeekClient
     raise TimeoutError, e.message
   rescue JSON::ParserError => e
     raise InvalidResponse, "DeepSeek returned malformed JSON: #{e.message}"
+  end
+
+  def image_data_uri(image)
+    value = image.to_s
+    return value if value.start_with?("data:")
+
+    unless value.start_with?("http://", "https://")
+      raise Error, "image must be a data URI or an http(s) URL"
+    end
+
+    response = image_connection.get(value)
+
+    unless response.success?
+      raise ImageDownloadError, "failed to download image: HTTP #{response.status}"
+    end
+
+    bytes = response.body.to_s
+    raise ImageDownloadError, "failed to download image: empty body" if bytes.empty?
+
+    content_type = response.headers["content-type"].to_s.split(";").first.presence || "application/octet-stream"
+    "data:#{content_type};base64,#{Base64.strict_encode64(bytes)}"
+  rescue Faraday::TimeoutError => e
+    raise ImageDownloadError, e.message
+  rescue Faraday::ConnectionFailed, Faraday::SSLError => e
+    raise ImageDownloadError, e.message
+  end
+
+  def image_connection
+    @image_connection ||= Faraday.new do |conn|
+      conn.options.timeout = TIMEOUT
+      conn.options.open_timeout = TIMEOUT
+      conn.adapter Faraday.default_adapter
+    end
   end
 
   def connection
