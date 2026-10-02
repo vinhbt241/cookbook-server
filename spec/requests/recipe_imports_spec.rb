@@ -193,6 +193,39 @@ RSpec.describe "RecipeImports", type: :request do
       expect(response).to have_http_status(:unprocessable_content)
       expect(JSON.parse(response.body)["error"]).to match(/image file/i)
     end
+
+    it "rejects an image larger than the size limit" do
+      user = create(:user, confirmed_at: Time.current)
+      stub_const("RecipeImport::SourceIdentifier::MAX_IMAGE_BYTES", 10)
+
+      post "/recipe-imports", params: { resource_type: "image", resource: upload_recipe_image },
+        headers: auth_headers(user)
+
+      expect(response).to have_http_status(:unprocessable_content)
+      expect(JSON.parse(response.body)["error"]).to match(/too large/i)
+    end
+
+    it "marks the import failed with no_recipe_found when the image yields no recipe" do
+      user = create(:user, confirmed_at: Time.current)
+      allow(DeepSeekClient).to receive(:structure_image).and_return(
+        "name" => nil, "ingredients" => [], "instructions" => []
+      )
+      allow(TypeSafeClient).to receive(:evaluate).and_return(
+        RecipeImport::FIELD_NAMES.index_with { 0.1 }
+      )
+
+      post "/recipe-imports", params: { resource_type: "image", resource: upload_recipe_image },
+        headers: auth_headers(user)
+      import_id = JSON.parse(response.body)["import_id"]
+
+      perform_enqueued_jobs
+
+      get "/recipe-imports/#{import_id}", headers: auth_headers(user)
+      body = JSON.parse(response.body)
+      expect(body["status"]).to eq("failed")
+      expect(body["error_code"]).to eq("no_recipe_found")
+      expect(body["retryable"]).to be(false)
+    end
   end
 
   describe "POST /recipe-imports with a PDF upload" do

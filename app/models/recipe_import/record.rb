@@ -6,6 +6,8 @@ module RecipeImport
 
     MAX_RETRY_ATTEMPTS = 3
 
+    # `no_recipe_found` is intentionally absent: re-parsing the same image
+    # bytes cannot produce a recipe, so it must not be retryable.
     RETRYABLE_ERROR_CODES = %w[
       fetch_http_5xx
       fetch_timeout

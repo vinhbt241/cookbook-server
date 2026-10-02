@@ -56,6 +56,11 @@ module RecipeImport
       extraction = build_image_extraction(source.value)
       result = Gate.apply(fields: extraction.fields, state: image_state(extraction.fields))
 
+      if recipe_absent?(result.gated_fields)
+        raise PipelineError.new(error_code: "no_recipe_found",
+          message: "couldn't read a recipe from this image")
+      end
+
       build_result(result.gated_fields, result.field_status)
     end
     private_class_method :parse_image
@@ -78,17 +83,34 @@ module RecipeImport
     end
     private_class_method :build_image_extraction
 
+    # Builds the evidence text Jev gates against. For images this is derived
+    # from DeepSeek's own output (Jev cannot see pixels), so the image gate is
+    # a consistency check on DeepSeek's JSON, not a source-presence check.
     def image_state(fields)
       state = fields.each_with_object([]) do |(field, value), lines|
         next if value.blank?
 
-        lines << "#{field}: #{value.inspect}"
+        lines << "#{field}: #{format_field_value(value)}"
       end.join("\n")
       state = "No recipe fields were extracted from the image." if state.blank?
 
       state
     end
     private_class_method :image_state
+
+    def format_field_value(value)
+      value.is_a?(Array) ? value.join(", ") : value.to_s
+    end
+    private_class_method :format_field_value
+
+    # TODO(web_page/pdf): adopt this same no_recipe_found outcome when those
+    # source types are refactored; currently scoped to images only.
+    def recipe_absent?(fields)
+      fields["name"].blank? &&
+        Array(fields["ingredients"]).empty? &&
+        Array(fields["instructions"]).empty?
+    end
+    private_class_method :recipe_absent?
 
     def build_result(fields, field_status)
       ParseResult.new(

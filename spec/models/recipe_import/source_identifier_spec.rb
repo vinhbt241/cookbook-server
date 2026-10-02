@@ -34,6 +34,15 @@ RSpec.describe RecipeImport::SourceIdentifier do
       }.to raise_error(RecipeImport::InvalidSource, /image file/i)
     end
 
+    it "rejects an image larger than MAX_IMAGE_BYTES" do
+      stub_const("RecipeImport::SourceIdentifier::MAX_IMAGE_BYTES", 10)
+      data_uri = "data:image/png;base64,#{Base64.strict_encode64("x" * 11)}"
+
+      expect {
+        described_class.for(source_type: "image", source: data_uri)
+      }.to raise_error(RecipeImport::InvalidSource, /too large/i)
+    end
+
     it "rejects a non-PDF data URI" do
       expect {
         described_class.for(source_type: "pdf", source: "data:text/plain;base64,aGVsbG8=")
