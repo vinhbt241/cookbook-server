@@ -27,11 +27,15 @@ module RecipeImport
         parse_web_page(source)
       when "image"
         parse_image(source)
+      when "pdf"
+        parse_pdf(source)
       else
         raise PipelineError.new(error_code: "unsupported_source_type", message: "unsupported source_type")
       end
     rescue WebPageFetcher::Error => e
       raise map_fetch_error(e)
+    rescue PdfExtractor::Error => e
+      raise PipelineError.new(error_code: e.error_code, message: e.message)
     rescue DeepSeekClient::Error => e
       raise PipelineError.new(error_code: "deep_seek_error", message: e.message)
     rescue TypeSafeClient::Error => e
@@ -55,6 +59,18 @@ module RecipeImport
       build_result(result.gated_fields, result.field_status)
     end
     private_class_method :parse_image
+
+    def parse_pdf(source)
+      text = PdfExtractor.extract_text(source.value)
+      text = PdfExtractor.ocr(source.value) if text.blank?
+
+      fields = Extraction.empty_fields.merge(DeepSeekClient.structure_pdf(text))
+      extraction = Extraction.new(markup_present: false, fields: fields, markup_dump: "")
+      result = Gate.apply(fields: extraction.fields, state: text)
+
+      build_result(result.gated_fields, result.field_status)
+    end
+    private_class_method :parse_pdf
 
     def build_image_extraction(data_uri)
       fields = Extraction.empty_fields.merge(DeepSeekClient.structure_image(data_uri))

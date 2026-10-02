@@ -4,7 +4,7 @@ require "digest"
 module RecipeImport
   # Turns a submitted Source into the global cache key used by OriginalRecipe.
   module SourceIdentifier
-    SUPPORTED_TYPES = %w[web_page image].freeze
+    SUPPORTED_TYPES = %w[web_page image pdf].freeze
 
     module_function
 
@@ -17,6 +17,8 @@ module RecipeImport
         web_page_identifier(source)
       when "image"
         image_identifier(source)
+      when "pdf"
+        pdf_identifier(source)
       end
     end
 
@@ -51,5 +53,22 @@ module RecipeImport
       Digest::SHA256.hexdigest(bytes)
     end
     private_class_method :image_identifier
+
+    def pdf_identifier(source)
+      data_uri = source.to_s
+      raise RecipeImport::InvalidSource, "source must be a PDF file" if data_uri.blank?
+
+      header, payload = data_uri.split(",", 2)
+      media_type = header.to_s.split(";", 2).first
+      unless media_type.to_s.start_with?("data:application/pdf") && payload.present?
+        raise RecipeImport::InvalidSource, "source must be a PDF file"
+      end
+
+      bytes = Base64.decode64(payload)
+      raise RecipeImport::InvalidSource, "source must be a non-empty PDF" if bytes.empty?
+
+      Digest::SHA256.hexdigest(bytes)
+    end
+    private_class_method :pdf_identifier
   end
 end
