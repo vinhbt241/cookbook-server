@@ -3,9 +3,9 @@ class RecipeImportsController < ApplicationController
   before_action :authenticate_confirmed!
 
   def create
-    # The public API contract (docs/designs/apis.md) names these request
-    # fields `resource`/`resource_type`; internally the domain term is Source.
-    source = RecipeImport::Source.new(type: params[:resource_type], value: params[:resource])
+    # The public API contract names these request fields `source`/`source_type`,
+    # matching the domain term Source.
+    source = RecipeImport::Source.new(type: params[:source_type], value: params[:source])
     submission = RecipeImport.submit(source)
 
     render json: RecipeImportSerializer.submission(submission),

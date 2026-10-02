@@ -25,7 +25,7 @@ Relationships: none in MVP. The server's `OriginalRecipe` cache is globally shar
 - nutritional_information: object (source-provided only; calculation deferred)
 - notes: text
 - original_source: string
-- source_identifier: string (web page → URL, YouTube → video ID, PDF/image → content hash)
+- source_identifier: string (web page → URL, PDF/image → content hash)
 - field_status: object (per-field `found`/`not_found`, written by the parse pipeline's Jev gate)
 - parsed_at: datetime
 - last_checked_at: datetime

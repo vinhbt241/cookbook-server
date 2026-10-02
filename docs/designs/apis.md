@@ -68,15 +68,17 @@ Response:
 
 ### POST /recipe-imports
 
-Parse a recipe from an external resource. Requires a verified account.
+Parse a recipe from an external Source. Requires a verified account.
 
 Request:
-- `resource` + `resource_type`:
-  - `web_page` / `youtube` → `resource` is a URL string
-  - `pdf` / `image` → `resource` is an uploaded file (multipart)
+- `source` + `source_type`:
+  - `web_page` → `source` is a URL string
+  - `pdf` / `image` → `source` is an uploaded file (multipart, or a base64 data URI)
 
 Behavior:
-1. Compute `source_identifier` (URL / video ID / content hash).
+1. Compute `source_identifier` (URL / content hash).
+
+> Note: video / YouTube import is a product requirement but is **not implemented** in the MVP server (`source_type: "youtube"` is unsupported). See `docs/api.md`.
 2. Look up the global `OriginalRecipe` cache. On a hit, return the cached recipe immediately.
 3. On a miss, enqueue a parse job (deterministic extraction → DeepSeek structuring → Jev presence/quality gates) and return 202.
 
@@ -125,7 +127,7 @@ User → Create recipe → Save locally (no server involvement).
 
 ### Import recipe
 
-User → select URL / PDF / Image / YouTube
+User → select URL / PDF / Image
 → authenticate (verified)
 → `POST /recipe-imports` → `202 { import_id }`
 → poll `GET /recipe-imports/:id` until `done`

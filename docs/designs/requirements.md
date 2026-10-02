@@ -56,6 +56,8 @@ Supported sources:
 - Videos
 - Youtube Video
 
+> Note: video/YouTube import is a product requirement but is **not implemented** in the MVP server yet. The server currently parses `web_page`, `image`, and `pdf` sources only (see `docs/api.md`).
+
 ### User flow
 
 1. User provides a recipe source.

@@ -58,7 +58,7 @@ RSpec.describe "RecipeImports", type: :request do
 
   describe "POST /recipe-imports" do
     it "rejects unauthenticated requests" do
-      post "/recipe-imports", params: { resource_type: "web_page", resource: url }, as: :json
+      post "/recipe-imports", params: { source_type: "web_page", source: url }, as: :json
 
       expect(response).to have_http_status(:unauthorized)
       expect(JSON.parse(response.body)["error"]).to eq("unauthorized")
@@ -67,7 +67,7 @@ RSpec.describe "RecipeImports", type: :request do
     it "rejects unconfirmed accounts" do
       user = create(:user, confirmed_at: nil)
 
-      post "/recipe-imports", params: { resource_type: "web_page", resource: url }, as: :json,
+      post "/recipe-imports", params: { source_type: "web_page", source: url }, as: :json,
         headers: auth_headers(user)
 
       expect(response).to have_http_status(:forbidden)
@@ -77,7 +77,7 @@ RSpec.describe "RecipeImports", type: :request do
     it "returns 202 with an import_id and processing status for a web page URL" do
       user = create(:user, confirmed_at: Time.current)
 
-      post "/recipe-imports", params: { resource_type: "web_page", resource: url }, as: :json,
+      post "/recipe-imports", params: { source_type: "web_page", source: url }, as: :json,
         headers: auth_headers(user)
 
       expect(response).to have_http_status(:accepted)
@@ -89,7 +89,7 @@ RSpec.describe "RecipeImports", type: :request do
     it "rejects an invalid web page URL" do
       user = create(:user, confirmed_at: Time.current)
 
-      post "/recipe-imports", params: { resource_type: "web_page", resource: "not a url" }, as: :json,
+      post "/recipe-imports", params: { source_type: "web_page", source: "not a url" }, as: :json,
         headers: auth_headers(user)
 
       expect(response).to have_http_status(:unprocessable_content)
@@ -101,7 +101,7 @@ RSpec.describe "RecipeImports", type: :request do
     it "returns 202 with an import_id and processing status for an image upload" do
       user = create(:user, confirmed_at: Time.current)
 
-      post "/recipe-imports", params: { resource_type: "image", resource: upload_recipe_image },
+      post "/recipe-imports", params: { source_type: "image", source: upload_recipe_image },
         headers: auth_headers(user)
 
       expect(response).to have_http_status(:accepted)
@@ -124,7 +124,7 @@ RSpec.describe "RecipeImports", type: :request do
         all_found_scores.merge("calories" => 0.1, "nutritional_information" => 0.1)
       )
 
-      post "/recipe-imports", params: { resource_type: "image", resource: upload_recipe_image },
+      post "/recipe-imports", params: { source_type: "image", source: upload_recipe_image },
         headers: auth_headers(user)
       import_id = JSON.parse(response.body)["import_id"]
 
@@ -157,7 +157,7 @@ RSpec.describe "RecipeImports", type: :request do
       user = create(:user, confirmed_at: Time.current)
       allow(DeepSeekClient).to receive(:structure_image).and_return("name" => "Photo Pancakes")
 
-      post "/recipe-imports", params: { resource_type: "image", resource: upload_recipe_image },
+      post "/recipe-imports", params: { source_type: "image", source: upload_recipe_image },
         headers: auth_headers(user)
       expect(response).to have_http_status(:accepted)
 
@@ -168,7 +168,7 @@ RSpec.describe "RecipeImports", type: :request do
       expect(original_recipe.original_source).to eq(recipe_image_content_hash)
       expect(DeepSeekClient).to have_received(:structure_image).once
 
-      post "/recipe-imports", params: { resource_type: "image", resource: upload_recipe_image },
+      post "/recipe-imports", params: { source_type: "image", source: upload_recipe_image },
         headers: auth_headers(user)
 
       expect(response).to have_http_status(:ok)
@@ -187,7 +187,7 @@ RSpec.describe "RecipeImports", type: :request do
         "text/html"
       )
 
-      post "/recipe-imports", params: { resource_type: "image", resource: upload },
+      post "/recipe-imports", params: { source_type: "image", source: upload },
         headers: auth_headers(user)
 
       expect(response).to have_http_status(:unprocessable_content)
@@ -198,7 +198,7 @@ RSpec.describe "RecipeImports", type: :request do
       user = create(:user, confirmed_at: Time.current)
       stub_const("RecipeImport::SourceIdentifier::MAX_IMAGE_BYTES", 10)
 
-      post "/recipe-imports", params: { resource_type: "image", resource: upload_recipe_image },
+      post "/recipe-imports", params: { source_type: "image", source: upload_recipe_image },
         headers: auth_headers(user)
 
       expect(response).to have_http_status(:unprocessable_content)
@@ -214,7 +214,7 @@ RSpec.describe "RecipeImports", type: :request do
         RecipeImport::FIELD_NAMES.index_with { 0.1 }
       )
 
-      post "/recipe-imports", params: { resource_type: "image", resource: upload_recipe_image },
+      post "/recipe-imports", params: { source_type: "image", source: upload_recipe_image },
         headers: auth_headers(user)
       import_id = JSON.parse(response.body)["import_id"]
 
@@ -234,7 +234,7 @@ RSpec.describe "RecipeImports", type: :request do
     it "returns 202 with an import_id and processing status for a PDF upload" do
       user = create(:user, confirmed_at: Time.current)
 
-      post "/recipe-imports", params: { resource_type: "pdf", resource: upload_recipe_pdf },
+      post "/recipe-imports", params: { source_type: "pdf", source: upload_recipe_pdf },
         headers: auth_headers(user)
 
       expect(response).to have_http_status(:accepted)
@@ -250,7 +250,7 @@ RSpec.describe "RecipeImports", type: :request do
         "text/html"
       )
 
-      post "/recipe-imports", params: { resource_type: "pdf", resource: upload },
+      post "/recipe-imports", params: { source_type: "pdf", source: upload },
         headers: auth_headers(user)
 
       expect(response).to have_http_status(:unprocessable_content)
@@ -271,7 +271,7 @@ RSpec.describe "RecipeImports", type: :request do
         "servings" => 2
       )
 
-      post "/recipe-imports", params: { resource_type: "pdf", resource: upload_recipe_pdf },
+      post "/recipe-imports", params: { source_type: "pdf", source: upload_recipe_pdf },
         headers: auth_headers(user)
       import_id = JSON.parse(response.body)["import_id"]
 
@@ -308,7 +308,7 @@ RSpec.describe "RecipeImports", type: :request do
         "instructions" => [ "Mix everything.", "Cook until golden." ]
       )
 
-      post "/recipe-imports", params: { resource_type: "pdf", resource: upload_recipe_pdf },
+      post "/recipe-imports", params: { source_type: "pdf", source: upload_recipe_pdf },
         headers: auth_headers(user)
       import_id = JSON.parse(response.body)["import_id"]
 
@@ -335,7 +335,7 @@ RSpec.describe "RecipeImports", type: :request do
         all_found_scores.merge("calories" => 0.1, "description" => 0.1)
       )
 
-      post "/recipe-imports", params: { resource_type: "pdf", resource: upload_recipe_pdf },
+      post "/recipe-imports", params: { source_type: "pdf", source: upload_recipe_pdf },
         headers: auth_headers(user)
       import_id = JSON.parse(response.body)["import_id"]
 
@@ -360,7 +360,7 @@ RSpec.describe "RecipeImports", type: :request do
       allow(PdfExtractor).to receive(:extract_text).and_return(pdf_text)
       allow(DeepSeekClient).to receive(:structure_pdf).and_return("name" => "PDF Pancakes")
 
-      post "/recipe-imports", params: { resource_type: "pdf", resource: upload_recipe_pdf },
+      post "/recipe-imports", params: { source_type: "pdf", source: upload_recipe_pdf },
         headers: auth_headers(user)
       expect(response).to have_http_status(:accepted)
 
@@ -371,7 +371,7 @@ RSpec.describe "RecipeImports", type: :request do
       expect(original_recipe.original_source).to eq(recipe_pdf_content_hash)
       expect(DeepSeekClient).to have_received(:structure_pdf).once
 
-      post "/recipe-imports", params: { resource_type: "pdf", resource: upload_recipe_pdf },
+      post "/recipe-imports", params: { source_type: "pdf", source: upload_recipe_pdf },
         headers: auth_headers(user)
 
       expect(response).to have_http_status(:ok)
@@ -387,7 +387,7 @@ RSpec.describe "RecipeImports", type: :request do
   describe "GET /recipe-imports/:id" do
     it "requires a confirmed account" do
       user = create(:user, confirmed_at: Time.current)
-      post "/recipe-imports", params: { resource_type: "web_page", resource: url }, as: :json,
+      post "/recipe-imports", params: { source_type: "web_page", source: url }, as: :json,
         headers: auth_headers(user)
       import_id = JSON.parse(response.body)["import_id"]
 
@@ -411,7 +411,7 @@ RSpec.describe "RecipeImports", type: :request do
       user = create(:user, confirmed_at: Time.current)
       stub_fetch("json_ld", text: "Fluffy Pancakes body text")
 
-      post "/recipe-imports", params: { resource_type: "web_page", resource: url }, as: :json,
+      post "/recipe-imports", params: { source_type: "web_page", source: url }, as: :json,
         headers: auth_headers(user)
       import_id = JSON.parse(response.body)["import_id"]
 
@@ -463,7 +463,7 @@ RSpec.describe "RecipeImports", type: :request do
         all_found_scores.merge("calories" => 0.1, "nutritional_information" => 0.1)
       )
 
-      post "/recipe-imports", params: { resource_type: "web_page", resource: url }, as: :json,
+      post "/recipe-imports", params: { source_type: "web_page", source: url }, as: :json,
         headers: auth_headers(user)
       import_id = JSON.parse(response.body)["import_id"]
 
@@ -500,7 +500,7 @@ RSpec.describe "RecipeImports", type: :request do
         all_found_scores.merge("ingredients" => 0.1, "preparation_time" => 0.1)
       )
 
-      post "/recipe-imports", params: { resource_type: "web_page", resource: url }, as: :json,
+      post "/recipe-imports", params: { source_type: "web_page", source: url }, as: :json,
         headers: auth_headers(user)
       import_id = JSON.parse(response.body)["import_id"]
 
@@ -529,7 +529,7 @@ RSpec.describe "RecipeImports", type: :request do
         RecipeImport::FIELD_NAMES.index_with { 0.1 }
       )
 
-      post "/recipe-imports", params: { resource_type: "web_page", resource: url }, as: :json,
+      post "/recipe-imports", params: { source_type: "web_page", source: url }, as: :json,
         headers: auth_headers(user)
       import_id = JSON.parse(response.body)["import_id"]
 
@@ -550,7 +550,7 @@ RSpec.describe "RecipeImports", type: :request do
       user = create(:user, confirmed_at: Time.current)
       stub_fetch("json_ld", text: "Fluffy Pancakes body text")
 
-      post "/recipe-imports", params: { resource_type: "web_page", resource: url }, as: :json,
+      post "/recipe-imports", params: { source_type: "web_page", source: url }, as: :json,
         headers: auth_headers(user)
       expect(response).to have_http_status(:accepted)
 
@@ -558,7 +558,7 @@ RSpec.describe "RecipeImports", type: :request do
       expect(WebPageFetcher).to have_received(:fetch).once
       original_recipe_id = OriginalRecipe.last.id
 
-      post "/recipe-imports", params: { resource_type: "web_page", resource: url }, as: :json,
+      post "/recipe-imports", params: { source_type: "web_page", source: url }, as: :json,
         headers: auth_headers(user)
 
       expect(response).to have_http_status(:ok)
