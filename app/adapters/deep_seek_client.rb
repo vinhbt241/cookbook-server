@@ -2,8 +2,6 @@
 #
 # This is the adapter seam for the DeepSeek fallback. The parse pipeline talks
 # to this class and never reaches Faraday or the DeepSeek API directly.
-require "base64"
-
 class DeepSeekClient
   BASE_URL = "https://api.deepseek.com"
   CHAT_PATH = "/chat/completions"
@@ -73,7 +71,6 @@ class DeepSeekClient
   class ApiError < Error; end
   class TimeoutError < Error; end
   class InvalidResponse < Error; end
-  class ImageDownloadError < Error; end
 
   def self.structure(text)
     new.structure(text)
@@ -152,33 +149,7 @@ class DeepSeekClient
     value = image.to_s
     return value if value.start_with?("data:")
 
-    unless value.start_with?("http://", "https://")
-      raise Error, "image must be a data URI or an http(s) URL"
-    end
-
-    response = image_connection.get(value)
-
-    unless response.success?
-      raise ImageDownloadError, "failed to download image: HTTP #{response.status}"
-    end
-
-    bytes = response.body.to_s
-    raise ImageDownloadError, "failed to download image: empty body" if bytes.empty?
-
-    content_type = response.headers["content-type"].to_s.split(";").first.presence || "application/octet-stream"
-    "data:#{content_type};base64,#{Base64.strict_encode64(bytes)}"
-  rescue Faraday::TimeoutError => e
-    raise ImageDownloadError, e.message
-  rescue Faraday::ConnectionFailed, Faraday::SSLError => e
-    raise ImageDownloadError, e.message
-  end
-
-  def image_connection
-    @image_connection ||= Faraday.new do |conn|
-      conn.options.timeout = TIMEOUT
-      conn.options.open_timeout = TIMEOUT
-      conn.adapter Faraday.default_adapter
-    end
+    raise Error, "image must be a data URI"
   end
 
   def connection

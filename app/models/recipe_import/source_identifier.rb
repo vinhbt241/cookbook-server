@@ -6,6 +6,11 @@ module RecipeImport
   module SourceIdentifier
     SUPPORTED_TYPES = %w[web_page image pdf].freeze
 
+    # Upper bound on decoded image bytes accepted before the vision call.
+    # 10 MB is a placeholder until DeepSeek's real vision image-size limit is
+    # confirmed (issue #20).
+    MAX_IMAGE_BYTES = 10 * 1024 * 1024
+
     module_function
 
     def for(source_type:, source:)
@@ -49,6 +54,7 @@ module RecipeImport
 
       bytes = Base64.decode64(payload)
       raise RecipeImport::InvalidSource, "source must be a non-empty image" if bytes.empty?
+      raise RecipeImport::InvalidSource, "image is too large" if bytes.bytesize > MAX_IMAGE_BYTES
 
       Digest::SHA256.hexdigest(bytes)
     end
