@@ -81,3 +81,5 @@ group :test do
 
   gem "shoulda-matchers", "~> 8.0"
 end
+
+gem "pdf-reader", "~> 2.16"

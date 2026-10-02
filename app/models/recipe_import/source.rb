@@ -17,7 +17,7 @@ module RecipeImport
     private
 
     def normalize_value(value)
-      return value.to_s unless image?
+      return value.to_s unless file?
 
       return value if value.is_a?(String) && value.start_with?("data:")
 
@@ -29,8 +29,8 @@ module RecipeImport
       end
     end
 
-    def image?
-      type == "image"
+    def file?
+      type.in?(%w[image pdf])
     end
   end
 end

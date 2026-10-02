@@ -39,6 +39,21 @@ class DeepSeekClient
     - nutritional_information: object
   PROMPT
 
+  PDF_SYSTEM_PROMPT = <<~PROMPT.freeze
+    You extract recipe data from the plain text of a PDF document.
+    Return a JSON object with only these keys. Use null or omit a key when the
+    value is absent. Never invent values.
+    - name: string
+    - description: string
+    - ingredients: array of strings
+    - instructions: array of strings, in cooking order
+    - preparation_time: integer minutes
+    - cooking_time: integer minutes
+    - servings: integer
+    - calories: integer
+    - nutritional_information: object
+  PROMPT
+
   VISION_SYSTEM_PROMPT = <<~PROMPT.freeze
     You extract recipe data from a photo of a recipe.
     Return a JSON object with only these keys. Use null or omit a key when the
@@ -64,6 +79,10 @@ class DeepSeekClient
     new.structure(text)
   end
 
+  def self.structure_pdf(text)
+    new.structure_pdf(text)
+  end
+
   def self.structure_image(image)
     new.structure_image(image)
   end
@@ -72,6 +91,15 @@ class DeepSeekClient
     parse_structure_response do
       post_structure_request([
         { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: text.to_s }
+      ])
+    end
+  end
+
+  def structure_pdf(text)
+    parse_structure_response do
+      post_structure_request([
+        { role: "system", content: PDF_SYSTEM_PROMPT },
         { role: "user", content: text.to_s }
       ])
     end

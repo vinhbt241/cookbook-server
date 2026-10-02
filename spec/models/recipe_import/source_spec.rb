@@ -18,6 +18,13 @@ RSpec.describe RecipeImport::Source do
       expect(source.value).to eq("data:image/png;base64,#{Base64.strict_encode64("photo-bytes")}")
     end
 
+    it "turns an uploaded pdf into a data URI" do
+      upload = instance_double("UploadedFile", read: "pdf-bytes", content_type: "application/pdf")
+      source = described_class.new(type: "pdf", value: upload)
+
+      expect(source.value).to eq("data:application/pdf;base64,#{Base64.strict_encode64("pdf-bytes")}")
+    end
+
     it "keeps an already-normalized image data URI" do
       data_uri = "data:image/png;base64,cGhvdG8="
       source = described_class.new(type: "image", value: data_uri)

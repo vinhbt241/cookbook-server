@@ -21,10 +21,23 @@ RSpec.describe RecipeImport::SourceIdentifier do
         .to eq("431ced6916a2a21a156e38701afe55bbd7f88969fbbfc56d7fe099d47f265460")
     end
 
+    it "uses the SHA-256 content hash as the source_identifier for a pdf" do
+      data_uri = "data:application/pdf;base64,JVBERi0xLjQgZmFrZQ=="
+
+      expect(described_class.for(source_type: "pdf", source: data_uri))
+        .to eq("932d2676c1e461ba50d559bba416fbc6af8da1f74309ae81370c615223d0e349")
+    end
+
     it "rejects a non-image data URI" do
       expect {
         described_class.for(source_type: "image", source: "data:text/plain;base64,aGVsbG8=")
       }.to raise_error(RecipeImport::InvalidSource, /image file/i)
+    end
+
+    it "rejects a non-PDF data URI" do
+      expect {
+        described_class.for(source_type: "pdf", source: "data:text/plain;base64,aGVsbG8=")
+      }.to raise_error(RecipeImport::InvalidSource, /PDF file/i)
     end
 
     it "rejects an empty image source" do
