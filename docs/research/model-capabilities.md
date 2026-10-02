@@ -25,6 +25,7 @@ Two current models (as of research date):
 - API is **OpenAI- and Anthropic-compatible** (standard SDKs work by swapping the base URL).
 - Peak hours: 01:00–04:00 and 06:00–10:00 UTC, Mon–Fri (off-peak is half price; weekends fully off-peak).
 - Vision on Flash means an image can go straight to the model (no separate OCR step).
+- **Vision limits** ([source](https://api-docs.deepseek.com/guides/vision#limits)): a single inline (base64) or external-URL image may be at most **32 MiB** and at most **8192 px per side** (4096 px per side when a request carries 15+ images). Request body limit is 48 MiB. Supported formats: JPEG, PNG, GIF, WebP.
 
 ## Jev via TypeSafe (decision output)
 

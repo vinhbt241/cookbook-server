@@ -7,9 +7,14 @@ module RecipeImport
     SUPPORTED_TYPES = %w[web_page image pdf].freeze
 
     # Upper bound on decoded image bytes accepted before the vision call.
-    # 10 MB is a placeholder until DeepSeek's real vision image-size limit is
-    # confirmed (issue #20).
-    MAX_IMAGE_BYTES = 10 * 1024 * 1024
+    # DeepSeek's vision endpoint caps a single inline (base64) or URL image at
+    # 32 MiB; see https://api-docs.deepseek.com/guides/vision#limits.
+    MAX_IMAGE_BYTES = 32 * 1024 * 1024
+
+    # Upper bound on an image's width/height in pixels before the vision call.
+    # DeepSeek caps each side at 8192 px for requests with fewer than 15 images;
+    # see https://api-docs.deepseek.com/guides/vision#limits.
+    MAX_IMAGE_DIMENSION = 8192
 
     module_function
 
@@ -55,6 +60,11 @@ module RecipeImport
       bytes = Base64.decode64(payload)
       raise RecipeImport::InvalidSource, "source must be a non-empty image" if bytes.empty?
       raise RecipeImport::InvalidSource, "image is too large" if bytes.bytesize > MAX_IMAGE_BYTES
+
+      dimensions = ImageDimensions.of(bytes)
+      if dimensions&.any? { |side| side > MAX_IMAGE_DIMENSION }
+        raise RecipeImport::InvalidSource, "image dimensions are too large"
+      end
 
       Digest::SHA256.hexdigest(bytes)
     end
