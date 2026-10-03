@@ -24,6 +24,9 @@ module RecipeImport
     private
 
     def persist_original_recipe(record, parse_result)
+      recipe = nil
+      enqueue_nutrition = false
+
       OriginalRecipe.transaction do
         recipe = OriginalRecipe.find_or_initialize_by(source_identifier: record.source_identifier)
 
@@ -50,10 +53,13 @@ module RecipeImport
           parse_result.instructions.each do |instruction|
             recipe.original_cooking_instructions.create!(instruction)
           end
-        end
 
-        recipe
+          enqueue_nutrition = true
+        end
       end
+
+      RecipeNutrition::NutritionJob.perform_later(recipe.id) if enqueue_nutrition
+      recipe
     end
   end
 end

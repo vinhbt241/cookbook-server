@@ -107,8 +107,13 @@ Response:
 
 `original_recipe` fields:
 - `name`, `description`, `ingredients` (free text), `instructions` (ordered), `preparation_time`, `cooking_time`, `servings`, `calories`, `nutritional_information` (source-provided only), `original_source`, `source_identifier`, `categories` (empty in MVP)
+- `calculated_nutritional_information` (per-serving: calories, protein, carbohydrates, fat, fiber, sugar, sodium) — calculated from ingredients, distinct from source-provided `nutritional_information`
+- `nutrition_status`: `pending` | `computed` | `partial` | `unavailable`
+- `unmatched_ingredients`: free-text ingredient names that did not Match a canonical Ingredient
 
 `field_status`: per field, `"found"` or `"not_found"` — derived from Jev's calibrated confidence and rendered as 🟢/🟡 on the review screen (req #7).
+
+Calculated nutrition runs as a background stage after parse completes. `done` means parse is complete; the calculated nutrition fields appear on the `original_recipe` once that stage finishes (typically sub-second, since it is local arithmetic).
 
 ## Authentication requirements
 

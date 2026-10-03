@@ -10,9 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_29_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_03_100200) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "ingredients", force: :cascade do |t|
+    t.string "name", null: false
+    t.decimal "calories_per_100g", precision: 8, scale: 2, null: false
+    t.jsonb "nutritional_information_per_100g", default: {}, null: false
+    t.jsonb "grams_per_unit", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_ingredients_on_name", unique: true
+  end
 
   create_table "original_cooking_instructions", force: :cascade do |t|
     t.bigint "original_recipe_id", null: false
@@ -34,6 +44,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_29_100000) do
     t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "ingredient_id"
+    t.index ["ingredient_id"], name: "index_original_recipe_ingredients_on_ingredient_id"
     t.index ["original_recipe_id"], name: "index_original_recipe_ingredients_on_original_recipe_id"
   end
 
@@ -53,6 +65,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_29_100000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.jsonb "field_status", default: {}, null: false
+    t.jsonb "calculated_nutritional_information"
+    t.integer "nutrition_status", default: 0, null: false
+    t.jsonb "unmatched_ingredients", default: [], null: false
     t.index ["source_identifier"], name: "index_original_recipes_on_source_identifier", unique: true
   end
 
@@ -82,6 +97,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_29_100000) do
   end
 
   add_foreign_key "original_cooking_instructions", "original_recipes"
+  add_foreign_key "original_recipe_ingredients", "ingredients"
   add_foreign_key "original_recipe_ingredients", "original_recipes"
   add_foreign_key "recipe_imports", "original_recipes"
 end

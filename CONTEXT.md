@@ -41,8 +41,16 @@ A user's collection of saved `Recipe`s.
 _Avoid_: recipe list, library
 
 **Ingredient**:
-A canonical, globally-shared food reference. The intended foundation for future per-recipe nutrition calculation.
+A canonical, globally-shared food reference. Carries per-100g nutrition data and a curated map of how much a common unit weighs, and is the basis for a recipe's CalculatedNutrition.
 _Avoid_: food, item, component
+
+**CalculatedNutrition**:
+Nutrition derived from an OriginalRecipe's ingredients (via the canonical Ingredient reference), as opposed to nutrition provided by the Source. The two are kept separate.
+_Avoid_: estimated nutrition, computed nutrition, derived nutrition
+
+**Match**:
+Resolving a free-text ingredient name to a canonical Ingredient. An ingredient that does not Match contributes nothing to CalculatedNutrition and is reported as such.
+_Avoid_: normalize, link, map
 
 **Category**:
 A classification for recipes. Global categories apply to `OriginalRecipe`s (server-side); users can also create their own categories for their `Recipe`s (mobile app).
