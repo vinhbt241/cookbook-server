@@ -22,7 +22,10 @@ Relationships: none in MVP. The server's `OriginalRecipe` cache is globally shar
 - cooking_time: integer
 - servings: integer
 - calories: integer
-- nutritional_information: object (source-provided only; calculation deferred)
+- nutritional_information: object (source-provided only)
+- calculated_nutritional_information: object (per-serving: calories, protein, carbohydrates, fat, fiber, sugar, sodium — written by the nutrition stage)
+- nutrition_status: enum (`pending` | `computed` | `partial` | `unavailable`)
+- unmatched_ingredients: array (free-text ingredient names that did not Match)
 - notes: text
 - original_source: string
 - source_identifier: string (web page → URL, PDF/image → content hash)
@@ -34,17 +37,19 @@ Relationships:
 - has_many original_recipe_ingredients
 - has_many original_cooking_instructions
 
-**OriginalRecipeIngredient** — free text; no canonical `Ingredient` link in MVP
+**OriginalRecipeIngredient**
 - original_recipe
+- ingredient: optional (the canonical Ingredient it Matched, backfilled by the nutrition stage)
 - name: string (free text, e.g. "2 chicken breasts")
-- quantity: decimal
-- unit: string
+- quantity: decimal (parsed from free text by the nutrition stage)
+- unit: string (canonical unit key, parsed by the nutrition stage)
 - preparation: string
 - optional: boolean
 - notes: text
 
 Relationships:
 - belongs_to original_recipe
+- optionally belongs_to ingredient
 
 **OriginalCookingInstruction**
 - original_recipe
@@ -56,9 +61,15 @@ Relationships:
 Relationships:
 - belongs_to original_recipe
 
-### Deferred — added with later pipeline stages
+**Ingredient** (nutrition stage) — global canonical food reference
+- name: string (unique, singular lowercase)
+- calories_per_100g: decimal
+- nutritional_information_per_100g: object (protein, carbohydrates, fat, fiber, sugar, sodium — grams per 100g)
+- grams_per_unit: object (canonical unit key → grams, e.g. `{"cup": 125}`)
 
-**Ingredient** (nutrition stage) — global canonical food reference with `calories_per_100g` and `nutritional_information_per_100g`. When it lands, `OriginalRecipeIngredient` gains a `belongs_to ingredient` link and normalization matches free-text names to canonical rows.
+Seeded with a small curated list for MVP; a FoodData Central import is a later stage.
+
+### Deferred — added with later pipeline stages
 
 **Category** (categorize stage) — global categories tagging `OriginalRecipe` (HABTM). Empty in MVP: nothing populates it until the categorize stage exists.
 

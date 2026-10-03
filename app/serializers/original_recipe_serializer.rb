@@ -14,6 +14,9 @@ class OriginalRecipeSerializer
       servings: original_recipe.servings,
       calories: original_recipe.calories,
       nutritional_information: original_recipe.nutritional_information,
+      calculated_nutritional_information: original_recipe.calculated_nutritional_information,
+      nutrition_status: original_recipe.nutrition_status,
+      unmatched_ingredients: original_recipe.unmatched_ingredients,
       original_source: original_recipe.original_source,
       source_identifier: original_recipe.source_identifier,
       categories: []
