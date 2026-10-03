@@ -135,8 +135,10 @@ RSpec.describe "RecipeImports", type: :request do
       get "/recipe-imports/#{import_id}", headers: auth_headers(user)
       body = JSON.parse(response.body)
       expect(body["status"]).to eq("done")
+      expect(body["import_id"]).to eq(import_id)
 
       original_recipe = body["original_recipe"]
+      expect(original_recipe["id"]).to be_present
       expect(original_recipe["name"]).to eq("Photo Pancakes")
       expect(original_recipe["ingredients"].map { |ingredient| ingredient["name"] })
         .to eq([ "1 cup flour", "1 cup milk", "2 eggs" ])
@@ -174,6 +176,8 @@ RSpec.describe "RecipeImports", type: :request do
       expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
       expect(body["status"]).to eq("cached")
+      expect(body["import_id"]).to be_present
+      expect(body["original_recipe"]["id"]).to eq(original_recipe.id)
       expect(body["original_recipe"]["source_identifier"]).to eq(recipe_image_content_hash)
 
       expect(OriginalRecipe.count).to eq(1)
@@ -377,6 +381,7 @@ RSpec.describe "RecipeImports", type: :request do
       expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
       expect(body["status"]).to eq("cached")
+      expect(body["import_id"]).to be_present
       expect(body["original_recipe"]["source_identifier"]).to eq(recipe_pdf_content_hash)
 
       expect(OriginalRecipe.count).to eq(1)
@@ -564,6 +569,8 @@ RSpec.describe "RecipeImports", type: :request do
       expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
       expect(body["status"]).to eq("cached")
+      expect(body["import_id"]).to be_present
+      expect(body["original_recipe"]["id"]).to eq(original_recipe_id)
       expect(body["original_recipe"]["source_identifier"]).to eq(url)
       expect(body["field_status"]["name"]).to eq("found")
 
@@ -682,6 +689,7 @@ RSpec.describe "RecipeImports", type: :request do
       expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
       expect(body["status"]).to eq("cached")
+      expect(body["import_id"]).to eq(record.id)
       expect(body["original_recipe"]["name"]).to eq("Cached Pancakes")
 
       record.reload
@@ -709,6 +717,7 @@ RSpec.describe "RecipeImports", type: :request do
       expect(response).to have_http_status(:ok)
       body = JSON.parse(response.body)
       expect(body).to include(
+        "import_id" => record.id,
         "status" => "failed",
         "error_code" => "fetch_http_4xx",
         "retryable" => false,

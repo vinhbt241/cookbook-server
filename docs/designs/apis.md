@@ -84,16 +84,16 @@ Behavior:
 
 Response:
 - `202 { "import_id": "...", "status": "processing" }`
-- Or, on a cache hit, the parsed recipe inline: `{ "status": "cached", "original_recipe": {...}, "field_status": {...} }`
+- Or, on a cache hit, the parsed recipe inline: `{ "import_id": "...", "status": "cached", "original_recipe": {...}, "field_status": {...} }`
 
 ### GET /recipe-imports/:id
 
 Poll a parse job. Requires a verified account.
 
 Response:
-- `{ "status": "processing" }` — poll again
-- `{ "status": "done" | "cached", "original_recipe": {...}, "field_status": {...} }`
-- `{ "status": "failed", "error": "...", "error_code": "...", "retryable": true|false, "retry_count": 1, "retries_remaining": 2 }` — rare; partial results are preserved where possible (req #9)
+- `{ "import_id": "...", "status": "processing" }` — poll again
+- `{ "import_id": "...", "status": "done" | "cached", "original_recipe": {...}, "field_status": {...} }`
+- `{ "import_id": "...", "status": "failed", "error": "...", "error_code": "...", "retryable": true|false, "retry_count": 1, "retries_remaining": 2 }` — rare; partial results are preserved where possible (req #9)
 
 ### POST /recipe-imports/:id/retry
 
@@ -101,12 +101,12 @@ Re-run a failed import in place. Requires a verified account.
 
 Response:
 - `202 { "import_id": "...", "status": "processing" }`
-- Or, on a cache hit, the parsed recipe inline with `status: "cached"` (no retry is consumed)
+- Or, on a cache hit, the parsed recipe inline with `status: "cached"` and `import_id` (no retry is consumed)
 - `404` unknown import
 - `409 { "error": "import is not failed" | "retry limit reached" }`
 
 `original_recipe` fields:
-- `name`, `description`, `ingredients` (free text), `instructions` (ordered), `preparation_time`, `cooking_time`, `servings`, `calories`, `nutritional_information` (source-provided only), `original_source`, `source_identifier`, `categories` (empty in MVP)
+- `id`, `name`, `description`, `ingredients` (free text), `instructions` (ordered), `preparation_time`, `cooking_time`, `servings`, `calories`, `nutritional_information` (source-provided only), `original_source`, `source_identifier`, `categories` (empty in MVP)
 - `calculated_nutritional_information` (per-serving: calories, protein, carbohydrates, fat, fiber, sugar, sodium) — calculated from ingredients, distinct from source-provided `nutritional_information`
 - `nutrition_status`: `pending` | `computed` | `partial` | `unavailable`
 - `unmatched_ingredients`: free-text ingredient names that did not Match a canonical Ingredient

@@ -5,6 +5,7 @@ class OriginalRecipeSerializer
 
   def as_json(_options = nil)
     {
+      id: original_recipe.id,
       name: original_recipe.name,
       description: original_recipe.description,
       ingredients: ingredients,

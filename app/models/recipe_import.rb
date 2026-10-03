@@ -51,14 +51,14 @@ module RecipeImport
     cached = OriginalRecipe.find_by(source_identifier:)
 
     if cached
-      Record.create!(
+      record = Record.create!(
         source_identifier: source_identifier,
         source_type: source.type,
         source: source.value,
         status: :cached,
         original_recipe: cached
       )
-      Submission.new(status: "cached", import_id: nil, original_recipe: cached)
+      Submission.new(status: "cached", import_id: record.id, original_recipe: cached)
     else
       record = Record.create!(
         source_identifier: source_identifier,
@@ -79,7 +79,7 @@ module RecipeImport
 
     if cached
       record.update!(status: :cached, original_recipe: cached, error: nil, error_code: nil)
-      Submission.new(status: "cached", import_id: nil, original_recipe: cached)
+      Submission.new(status: "cached", import_id: record.id, original_recipe: cached)
     else
       record.update!(
         status: :processing,

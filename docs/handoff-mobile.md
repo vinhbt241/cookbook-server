@@ -104,6 +104,7 @@ Request uses the public field names `source` and `source_type`:
 
 ```json
 {
+  "import_id": 1,
   "status": "cached",
   "original_recipe": { "..." },
   "field_status": { "..." }
@@ -113,7 +114,7 @@ Request uses the public field names `source` and `source_type`:
 - Cache miss (parse enqueued) — `202`:
 
 ```json
-{ "import_id": "1", "status": "processing" }
+{ "import_id": 1, "status": "processing" }
 ```
 
 - Invalid source — `422 { "error": "..." }`
@@ -122,8 +123,8 @@ Request uses the public field names `source` and `source_type`:
 
 `GET /recipe-imports/:id` — requires confirmed account.
 
-- `200 { "status": "processing" }` — poll again
-- `200 { "status": "done" | "cached", "original_recipe": {...}, "field_status": {...} }`
+- `200 { "import_id": 1, "status": "processing" }` — poll again
+- `200 { "import_id": 1, "status": "done" | "cached", "original_recipe": {...}, "field_status": {...} }`
 - `200` failed shape (below)
 - `404 { "error": "import not found" }`
 
@@ -131,6 +132,7 @@ Request uses the public field names `source` and `source_type`:
 
 ```json
 {
+  "import_id": 1,
   "status": "failed",
   "error": "...",
   "error_code": "...",
@@ -144,11 +146,13 @@ Request uses the public field names `source` and `source_type`:
 
 `POST /recipe-imports/:id/retry` — re-runs a failed import in place.
 
-- `202 { "import_id": "...", "status": "processing" }` — retry consumed, re-enqueued
-- `200` cached shape — the source was parsed by another import in the meantime; **no retry is consumed**
+- `202 { "import_id": 1, "status": "processing" }` — retry consumed, re-enqueued
+- `200 { "import_id": 1, "status": "cached", "original_recipe": {...}, "field_status": {...} }` — the source was parsed by another import in the meantime; **no retry is consumed**
 - `404 { "error": "import not found" }`
 - `409 { "error": "import is not failed" }`
 - `409 { "error": "retry limit reached" }`
+
+`import_id` is the integer `RecipeImport::Record` id. Every import response carries it, and it is the value used in the poll (`GET /recipe-imports/:id`) and retry (`POST /recipe-imports/:id/retry`) URLs.
 
 Max retries: **3** (`retries_remaining` never goes below 0).
 
@@ -178,6 +182,7 @@ The exact JSON returned inside every `original_recipe` object (from `OriginalRec
 
 ```jsonc
 {
+  "id": 1,
   "name": "string | null",
   "description": "string | null",
   "ingredients": [
@@ -217,6 +222,7 @@ The exact JSON returned inside every `original_recipe` object (from `OriginalRec
 
 ### Field semantics worth knowing
 
+- `id` — the stable server id of the cached `OriginalRecipe` (integer). Keep it as provenance when you fork the recipe, and use it to match the nutrition stage's later output back to the recipe you already saved (nutrition arrives via the same `GET /recipe-imports/:id` poll — see `nutrition_status` below).
 - `nutritional_information` vs `calculated_nutritional_information`: the first is **provided by the source**, the second is **calculated by the server** from the ingredient list. Keep them visibly distinct in the UI (req #6).
 - `nutrition_status` enum:
   - `pending` — nutrition stage not run yet (transient; `done` arrives before nutrition finishes)
