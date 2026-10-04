@@ -55,3 +55,27 @@ _Avoid_: normalize, link, map
 **Category**:
 A classification for recipes. Global categories apply to `OriginalRecipe`s (server-side); users can also create their own categories for their `Recipe`s (mobile app).
 _Avoid_: tag, label, type
+
+**User**:
+The server's authentication identity: an account, identified by email, that can sign in and import recipes. Owns no recipes server-side — a `User`'s `Recipe`s and `Cookbook` live in the mobile app. A `User` may hold the Admin role.
+_Avoid_: account, customer, member
+
+**Admin**:
+A `User` whose role grants access to the server's admin dashboard, for curating `Ingredient`s, moderating `OriginalRecipe`s, and monitoring `RecipeImport`s.
+_Avoid_: moderator, superuser, staff, operator
+
+**Curate**:
+Admin maintenance of the canonical `Ingredient` reference — creating, editing, or deactivating `Ingredient`s so future `Match`es use correct data.
+_Avoid_: manage, maintain, edit
+
+**Moderate**:
+Admin correction of a cached `OriginalRecipe`: editing its fields directly, or `Re-parse`-ing the `Source` when the whole parse is wrong.
+_Avoid_: edit, fix, review
+
+**Re-parse**:
+The admin action that forces a `Source`'s cached `OriginalRecipe` to be re-extracted in place, overwriting the previous parse while keeping its history.
+_Avoid_: invalidate, refresh, re-extract
+
+**Deactivate**:
+Removing an `Ingredient` from future `Match`es by flagging it inactive, without deleting it or breaking historical references.
+_Avoid_: delete, remove, disable
